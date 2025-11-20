@@ -1,43 +1,70 @@
 package com.finan.orcamento.controller;
 
 import com.finan.orcamento.model.OrcamentoModel;
+import com.finan.orcamento.model.ClienteModel;
+import com.finan.orcamento.model.UsuarioModel;
+import com.finan.orcamento.service.ClienteService;
+import com.finan.orcamento.service.UsuarioService;
 import com.finan.orcamento.repositories.OrcamentoRepository;
-import com.finan.orcamento.service.OrcamentoService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController
-@RequestMapping(path="/orcamentos")
+@Controller
+@RequestMapping("/orcamentos")
 public class OrcamentoController {
+
     @Autowired
-    private OrcamentoService orcamentoService;
+    private ClienteService clienteService;
+
+    @Autowired
+    private UsuarioService usuarioService; // Agora usamos o serviço de usuário também
+
     @Autowired
     private OrcamentoRepository orcamentoRepository;
 
     @GetMapping
-    public ResponseEntity<List<OrcamentoModel>>buscaTodosOrcamentos(){
-        return ResponseEntity.ok(orcamentoService.buscarCadastro());
+    public String abrirPaginaOrcamentos(Model model) {
+        OrcamentoModel orcamento = new OrcamentoModel();
+        
+        // Inicializa ambos vazios para não dar erro no HTML
+        orcamento.setCliente(new ClienteModel());
+        orcamento.setUsuario(new UsuarioModel());
+        
+        model.addAttribute("orcamentoModel", orcamento);
+        model.addAttribute("orcamentos", orcamentoRepository.findAll());
+        return "orcamentoPage";
     }
-    @GetMapping(path="/pesquisaid/{id}")
-    public ResponseEntity<OrcamentoModel>buscaPorId(@PathVariable Long id){
-        return ResponseEntity.ok().body(orcamentoService.buscaId(id));
+
+    // API para buscar CLIENTES
+    @GetMapping("/pesquisar-cliente")
+    @ResponseBody
+    public List<ClienteModel> pesquisarClientes(@RequestParam("termo") String termo) {
+        return clienteService.pesquisar(termo);
     }
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<OrcamentoModel>cadastraOrcamento(@RequestBody OrcamentoModel orcamentoModel){
-        return ResponseEntity.ok(orcamentoService.cadastrarOrcamento(orcamentoModel));
+
+    // API para buscar USUÁRIOS
+    @GetMapping("/pesquisar-usuario")
+    @ResponseBody
+    public List<UsuarioModel> pesquisarUsuarios(@RequestParam("termo") String termo) {
+        return usuarioService.buscarUsuariosPorNome(termo);
     }
-    @PostMapping(path="/put/{id}")
-    public ResponseEntity<OrcamentoModel>atualizaOrcamento(@RequestBody OrcamentoModel orcamentoModel, @PathVariable Long id){
-        OrcamentoModel orcamentoNewObj= orcamentoService.atualizaCadastro(orcamentoModel, id);
-        return ResponseEntity.ok().body(orcamentoNewObj);
-    }
-    @DeleteMapping(path="/delete/{id}")
-    public void deleteOrcamento(@PathVariable Long id){
-        orcamentoService.deletaOrcamento(id);
+
+    @PostMapping("/salvar")
+    public String salvarOrcamento(OrcamentoModel orcamento) {
+        // Limpeza: Se o ID vier nulo/zero, definimos o objeto como null
+        // Isso garante que salve APENAS um dos dois (ou Cliente ou Usuario)
+        if (orcamento.getCliente() == null || orcamento.getCliente().getId() == null) {
+            orcamento.setCliente(null);
+        }
+        if (orcamento.getUsuario() == null || orcamento.getUsuario().getId() == null) {
+            orcamento.setUsuario(null);
+        }
+
+        orcamentoRepository.save(orcamento);
+        return "redirect:/orcamentos";
     }
 }
