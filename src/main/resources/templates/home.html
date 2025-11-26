@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema de Gerenciamento</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f7f6; padding: 20px; }
+        .card { margin-top: 20px; padding: 20px; }
+        .tab-content { background: white; padding: 20px; border: 1px solid #dee2e6; border-top: none; border-radius: 0 0 5px 5px;}
+        .hidden { display: none; }
+        .lista-resultados li { cursor: pointer; }
+        .lista-resultados li:hover { background-color: #f0f8ff; }
+        .btn-acao { margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 class="text-center mb-4">Sistema Integrado</h1>
+
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item"><button class="nav-link active" id="clientes-tab" data-bs-toggle="tab" data-bs-target="#clientes" type="button">Clientes</button></li>
+        <li class="nav-item"><button class="nav-link" id="usuarios-tab" data-bs-toggle="tab" data-bs-target="#usuarios" type="button">Usuários</button></li>
+        <li class="nav-item"><button class="nav-link" id="orcamentos-tab" data-bs-toggle="tab" data-bs-target="#orcamentos" type="button">Orçamentos</button></li>
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+        
+        <div class="tab-pane fade show active" id="clientes" role="tabpanel">
+            <h3>Gerenciar Clientes</h3>
+            <form id="formCliente" th:action="@{/clientes/salvar}" th:object="${clienteModel}" method="post" class="row g-3">
+                <input type="hidden" id="cliId" th:field="*{id}" />
+                <div class="col-md-6">
+                    <label class="form-label">Nome:</label>
+                    <input type="text" id="cliNome" th:field="*{nome}" class="form-control" placeholder="Nome Completo" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">CPF:</label>
+                    <input type="text" id="cliCpf" th:field="*{cpf}" class="form-control" placeholder="000.000.000-00" required />
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-success">💾 Salvar</button>
+                    <button type="button" class="btn btn-secondary" onclick="limparFormCliente()">🧹 Limpar / Novo</button>
+                </div>
+            </form>
+
+            <hr>
+            <h4>Lista de Clientes</h4>
+            <table class="table table-striped table-hover mb-5">
+                <thead class="table-dark"><tr><th>ID</th><th>Nome</th><th>CPF</th><th>Ações</th></tr></thead>
+                <tbody>
+                    <tr th:each="cli : ${clientes}">
+                        <td th:text="${cli.id}"></td>
+                        <td th:text="${cli.nome}"></td>
+                        <td th:text="${cli.cpf}"></td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-warning btn-acao" 
+                                th:data-id="${cli.id}"
+                                th:data-nome="${cli.nome}"
+                                th:data-cpf="${cli.cpf}"
+                                onclick="editarCliente(this.getAttribute('data-id'), this.getAttribute('data-nome'), this.getAttribute('data-cpf'))">
+                                ✏️ Editar
+                            </button>
+                            
+                            <a th:href="@{/clientes/excluir/{id}(id=${cli.id})}" class="btn btn-sm btn-danger btn-acao" onclick="return confirm('Confirmar exclusão?')">🗑️ Excluir</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="card bg-light border-primary">
+                <div class="card-body">
+                    <h4 class="card-title text-primary">📊 Relatório de Gastos</h4>
+                    <div class="row g-3 align-items-end mt-2">
+                        <div class="col-md-6">
+                            <label class="fw-bold">Por Data:</label>
+                            <div class="input-group">
+                                <input type="date" id="dataInicio" class="form-control">
+                                <span class="input-group-text">até</span>
+                                <input type="date" id="dataFim" class="form-control">
+                                <button class="btn btn-primary" onclick="buscarRelatorio('data')">🔎 Filtrar</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="fw-bold">Por Valor (R$):</label>
+                            <div class="input-group">
+                                <input type="number" id="valorMin" class="form-control" placeholder="Mín">
+                                <span class="input-group-text">até</span>
+                                <input type="number" id="valorMax" class="form-control" placeholder="Máx">
+                                <button class="btn btn-primary" onclick="buscarRelatorio('valor')">🔎 Filtrar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <table class="table table-bordered mt-3 bg-white">
+                        <thead><tr class="table-primary"><th>Data</th><th>Cliente/Usuário</th><th>Descrição</th><th>Valor</th></tr></thead>
+                        <tbody id="tabelaRelatorio"><tr><td colspan="4" class="text-center text-muted">Aguardando busca...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="usuarios" role="tabpanel">
+            <h3>Gerenciar Usuários</h3>
+            <form id="formUsuario" th:action="@{/usuarios}" th:object="${usuarioModel}" method="post" class="row g-3">
+                <input type="hidden" id="usuId" th:field="*{id}" />
+                <div class="col-md-6">
+                    <label class="form-label">Nome Usuário:</label>
+                    <input type="text" id="usuNome" th:field="*{nomeUsuario}" class="form-control" required />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">RG:</label>
+                    <input type="text" id="usuRg" th:field="*{rg}" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">CPF:</label>
+                    <input type="text" id="usuCpf" th:field="*{cpf}" class="form-control" />
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">Nome da Mãe:</label>
+                    <input type="text" id="usuMae" th:field="*{nomeMae}" class="form-control" />
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-success">💾 Salvar</button>
+                    <button type="button" class="btn btn-secondary" onclick="limparFormUsuario()">🧹 Limpar / Novo</button>
+                </div>
+            </form>
+
+            <hr>
+            <table class="table table-striped table-hover">
+                <thead class="table-dark"><tr><th>ID</th><th>Nome</th><th>RG</th><th>CPF</th><th>Ações</th></tr></thead>
+                <tbody>
+                    <tr th:each="usu : ${usuarios}">
+                        <td th:text="${usu.id}"></td>
+                        <td th:text="${usu.nomeUsuario}"></td>
+                        <td th:text="${usu.rg}"></td>
+                        <td th:text="${usu.cpf}"></td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-warning btn-acao" 
+                                th:data-id="${usu.id}"
+                                th:data-nome="${usu.nomeUsuario}"
+                                th:data-rg="${usu.rg}"
+                                th:data-cpf="${usu.cpf}"
+                                th:data-mae="${usu.nomeMae}"
+                                onclick="editarUsuario(this.getAttribute('data-id'), this.getAttribute('data-nome'), this.getAttribute('data-rg'), this.getAttribute('data-cpf'), this.getAttribute('data-mae'))">
+                                ✏️ Editar
+                            </button>
+                            
+                            <a th:href="@{/usuarios/excluir/{id}(id=${usu.id})}" class="btn btn-sm btn-danger btn-acao" onclick="return confirm('Confirmar exclusão?')">🗑️ Excluir</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="tab-pane fade" id="orcamentos" role="tabpanel">
+            <h3>Novo Orçamento</h3>
+            <form th:action="@{/orcamentos/salvar}" th:object="${orcamentoModel}" method="post" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Descrição:</label>
+                    <input type="text" th:field="*{descricao}" class="form-control" required />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Valor (R$):</label>
+                    <input type="number" step="0.01" th:field="*{valor}" class="form-control" required />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Data:</label>
+                    <input type="date" th:field="*{data}" class="form-control" required />
+                </div>
+
+                <div class="col-12 mt-3">
+                    <label class="form-label fw-bold">Vincular a:</label>
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="tipoPessoa" id="radioCliente" value="cliente" checked onclick="mudarTipo('cliente')">
+                        <label class="btn btn-outline-primary" for="radioCliente">Cliente</label>
+
+                        <input type="radio" class="btn-check" name="tipoPessoa" id="radioUsuario" value="usuario" onclick="mudarTipo('usuario')">
+                        <label class="btn btn-outline-primary" for="radioUsuario">Usuário</label>
+                    </div>
+                </div>
+
+                <div id="divCliente" class="col-12">
+                    <div class="input-group mt-2">
+                        <input type="text" id="nomeCliente" class="form-control" placeholder="Selecione um cliente..." readonly />
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalPesquisa" onclick="configurarModal('cliente')">🔍 Buscar Cliente</button>
+                    </div>
+                    <input type="hidden" id="idCliente" th:field="*{cliente.id}" />
+                </div>
+
+                <div id="divUsuario" class="col-12 hidden">
+                    <div class="input-group mt-2">
+                        <input type="text" id="nomeUsuario" class="form-control" placeholder="Selecione um usuário..." readonly />
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalPesquisa" onclick="configurarModal('usuario')">🔍 Buscar Usuário</button>
+                    </div>
+                    <input type="hidden" id="idUsuario" th:field="*{usuario.id}" />
+                </div>
+
+                <div class="col-12 mt-4">
+                    <button type="submit" class="btn btn-success w-100">Salvar Orçamento</button>
+                </div>
+            </form>
+
+            <hr>
+            <h4>Histórico de Orçamentos</h4>
+            <table class="table table-bordered">
+                <thead class="table-dark"><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Vinculado a</th></tr></thead>
+                <tbody>
+                    <tr th:each="orc : ${orcamentos}">
+                        <td th:text="${orc.data != null} ? ${#temporals.format(orc.data, 'dd/MM/yyyy')} : '-'"></td>
+                        <td th:text="${orc.descricao}"></td>
+                        <td th:text="'R$ ' + ${orc.valor}"></td>
+                        <td>
+                            <span th:if="${orc.cliente != null}" th:text="'Cliente: ' + ${orc.cliente.nome}" class="badge bg-primary"></span>
+                            <span th:if="${orc.usuario != null}" th:text="'Usuário: ' + ${orc.usuario.nomeUsuario}" class="badge bg-success"></span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalPesquisa" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloModal">Pesquisar</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="termoPesquisa" class="form-control" placeholder="Digite o nome...">
+                    <button class="btn btn-outline-secondary" onclick="realizarPesquisa()">Pesquisar</button>
+                </div>
+                <ul id="listaResultados" class="list-group lista-resultados"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // ===== Lógica de Edição de CLIENTE =====
+    function editarCliente(id, nome, cpf) {
+        document.getElementById('cliId').value = id;
+        document.getElementById('cliNome').value = nome;
+        document.getElementById('cliCpf').value = cpf;
+        window.scrollTo(0, 0); 
+    }
+
+    function limparFormCliente() {
+        document.getElementById('cliId').value = '';
+        document.getElementById('formCliente').reset();
+    }
+
+    // ===== Lógica de Edição de USUÁRIO =====
+    function editarUsuario(id, nome, rg, cpf, mae) {
+        document.getElementById('usuId').value = id;
+        document.getElementById('usuNome').value = nome;
+        document.getElementById('usuRg').value = rg;
+        document.getElementById('usuCpf').value = cpf;
+        document.getElementById('usuMae').value = mae;
+        window.scrollTo(0, 0); 
+    }
+
+    function limparFormUsuario() {
+        document.getElementById('usuId').value = '';
+        document.getElementById('formUsuario').reset();
+    }
+
+    // ===== Lógica Geral (Mantida) =====
+    let tipoBuscaAtual = 'cliente';
+
+    function mudarTipo(tipo) {
+        tipoBuscaAtual = tipo;
+        if (tipo === 'cliente') {
+            document.getElementById('divCliente').classList.remove('hidden');
+            document.getElementById('divUsuario').classList.add('hidden');
+            document.getElementById('idUsuario').value = ''; 
+            document.getElementById('nomeUsuario').value = '';
+        } else {
+            document.getElementById('divCliente').classList.add('hidden');
+            document.getElementById('divUsuario').classList.remove('hidden');
+            document.getElementById('idCliente').value = '';
+            document.getElementById('nomeCliente').value = '';
+        }
+    }
+
+    function configurarModal(tipo) {
+        tipoBuscaAtual = tipo;
+        document.getElementById('tituloModal').innerText = 'Buscar ' + (tipo === 'cliente' ? 'Cliente' : 'Usuário');
+        document.getElementById('termoPesquisa').value = '';
+        document.getElementById('listaResultados').innerHTML = '';
+    }
+
+    function realizarPesquisa() {
+        const termo = document.getElementById('termoPesquisa').value;
+        const lista = document.getElementById('listaResultados');
+        lista.innerHTML = '<li class="list-group-item">Carregando...</li>';
+        let url = (tipoBuscaAtual === 'cliente') 
+            ? '/orcamentos/pesquisar-cliente?termo=' + termo 
+            : '/orcamentos/pesquisar-usuario?termo=' + termo;
+
+        fetch(url).then(res => res.json()).then(dados => {
+            lista.innerHTML = '';
+            if(dados.length === 0) { lista.innerHTML = '<li class="list-group-item text-muted">Nenhum encontrado.</li>'; return; }
+            dados.forEach(dado => {
+                let item = document.createElement('li');
+                item.className = 'list-group-item list-group-item-action';
+                let nomeExibicao = dado.nome || dado.nomeUsuario;
+                item.innerText = nomeExibicao + ' (CPF: ' + (dado.cpf || 'N/A') + ')';
+                item.onclick = () => {
+                    if (tipoBuscaAtual === 'cliente') {
+                        document.getElementById('idCliente').value = dado.id;
+                        document.getElementById('nomeCliente').value = nomeExibicao;
+                    } else {
+                        document.getElementById('idUsuario').value = dado.id;
+                        document.getElementById('nomeUsuario').value = nomeExibicao;
+                    }
+                    const modalEl = document.getElementById('modalPesquisa');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    modalInstance.hide();
+                };
+                lista.appendChild(item);
+            });
+        });
+    }
+
+    // ===== Relatório =====
+    function buscarRelatorio(tipo) {
+        const tbody = document.getElementById('tabelaRelatorio');
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Carregando...</td></tr>';
+        let url = '';
+        if (tipo === 'data') {
+            const inicio = document.getElementById('dataInicio').value;
+            const fim = document.getElementById('dataFim').value;
+            if(!inicio || !fim) { alert("Preencha as duas datas!"); return; }
+            url = `/relatorios/por-data?inicio=${inicio}&fim=${fim}`;
+        } else {
+            const min = document.getElementById('valorMin').value;
+            const max = document.getElementById('valorMax').value;
+            if(!min || !max) { alert("Preencha os dois valores!"); return; }
+            url = `/relatorios/por-valor?min=${min}&max=${max}`;
+        }
+        fetch(url).then(res => res.json()).then(dados => {
+            tbody.innerHTML = '';
+            if(dados.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-warning">Nenhum resultado encontrado.</td></tr>'; return; }
+            dados.forEach(orcamento => {
+                let nomeCliente = 'Sem Vínculo';
+                if (orcamento.cliente) nomeCliente = orcamento.cliente.nome;
+                else if (orcamento.usuario) nomeCliente = orcamento.usuario.nomeUsuario + ' (Usuário)';
+                let row = `<tr><td>${orcamento.data || 'Sem Data'}</td><td>${nomeCliente}</td><td>${orcamento.descricao}</td><td>R$ ${orcamento.valor}</td></tr>`;
+                tbody.innerHTML += row;
+            });
+        }).catch(err => { console.error(err); tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Erro ao buscar dados.</td></tr>'; });
+    }
+</script>
+
+</body>
+</html>

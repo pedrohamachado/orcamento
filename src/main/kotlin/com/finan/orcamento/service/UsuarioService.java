@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UsuarioService {
@@ -18,7 +17,6 @@ public class UsuarioService {
         return usuarioRepository.findAll();
     }
 
-    // Método usado pelo Modal de Pesquisa
     public List<UsuarioModel> buscarUsuariosPorNome(String termo) {
         return usuarioRepository.findByNomeUsuarioContainingIgnoreCase(termo);
     }
@@ -26,6 +24,9 @@ public class UsuarioService {
     public UsuarioModel cadastrarUsuario(UsuarioModel usuarioModel){
         return usuarioRepository.save(usuarioModel);
     }
-    
-    // ... outros métodos (buscaId, delete, etc) se precisar
+
+    // Novo método para excluir
+    public void excluir(Long id) {
+        usuarioRepository.deleteById(id);
+    }
 }

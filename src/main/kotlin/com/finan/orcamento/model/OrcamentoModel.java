@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDate; // Importação da data
 
 @Entity
 @Table(name = "orcamento")
@@ -19,13 +20,16 @@ public class OrcamentoModel implements Serializable {
     @Column(name = "valor")
     private BigDecimal valor;
 
-    // Relacionamento com CLIENTE (Opcional)
+    @Column(name = "data_orcamento")
+    private LocalDate data; // Novo campo Data
+
+    // Relacionamento com CLIENTE
     @ManyToOne
     @JoinColumn(name = "cliente_id", nullable = true)
     @JsonBackReference
     private ClienteModel cliente;
 
-    // Relacionamento com USUARIO (Opcional - Novo)
+    // Relacionamento com USUARIO
     @ManyToOne
     @JoinColumn(name = "usuario_id", nullable = true)
     @JsonBackReference
@@ -42,6 +46,9 @@ public class OrcamentoModel implements Serializable {
 
     public BigDecimal getValor() { return valor; }
     public void setValor(BigDecimal valor) { this.valor = valor; }
+
+    public LocalDate getData() { return data; }
+    public void setData(LocalDate data) { this.data = data; }
 
     public ClienteModel getCliente() { return cliente; }
     public void setCliente(ClienteModel cliente) { this.cliente = cliente; }
